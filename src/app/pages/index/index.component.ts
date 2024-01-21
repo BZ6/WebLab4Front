@@ -1,8 +1,8 @@
 import {Component, inject} from '@angular/core'
-import {UserService} from '../../services/user.service'
 import {ButtonModule} from 'primeng/button'
 import {RouterLink} from '@angular/router'
 import {RippleModule} from 'primeng/ripple'
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-index',
@@ -16,5 +16,7 @@ import {RippleModule} from 'primeng/ripple'
   styleUrl: './index.component.scss'
 })
 export class IndexComponent {
-  protected userService = inject(UserService)
+  constructor(
+    public authService: AuthService
+    ) {}
 }

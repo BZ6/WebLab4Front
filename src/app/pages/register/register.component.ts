@@ -1,12 +1,14 @@
 import {Component, inject} from '@angular/core'
-import {UserService} from '../../services/user.service'
 import {FormsModule, NgForm} from '@angular/forms'
 import {PasswordModule} from 'primeng/password'
 import {ButtonModule} from 'primeng/button'
 import {MessageService} from 'primeng/api'
 import {InputTextModule} from 'primeng/inputtext'
-import {RouterLink} from '@angular/router'
+import {Router, RouterLink} from '@angular/router'
 import {RippleModule} from 'primeng/ripple'
+import { JwtDTO } from '../../core/dto/jwt.dto'
+import { ApiService } from '../../core/services/api.service'
+import { TokenService } from '../../core/services/token.service'
 
 @Component({
   selector: 'app-register',
@@ -23,8 +25,12 @@ import {RippleModule} from 'primeng/ripple'
   styleUrl: './register.component.scss'
 })
 export class RegisterComponent {
-  private userService = inject(UserService)
-  private messageService = inject(MessageService)
+  constructor(
+    private apiService: ApiService,
+    private router: Router,
+    private tokenService: TokenService,
+    private messageService: MessageService,
+  ) {}
 
   private validationFailed!: boolean
 
@@ -42,7 +48,23 @@ export class RegisterComponent {
       this.showError('Password must be between 8 and 32 characters')
     if (this.validationFailed) return
 
-    this.userService.register(username, password)
+    const signUpData = {
+      username: username,
+      password: password,
+    };
+
+    this.apiService.signUp(signUpData).subscribe({
+        next: (resp: JwtDTO) => {
+            this.tokenService.saveToken(resp.token);
+            console.log(resp.token);
+            this.router.navigate(['main']);
+        },
+        //TODO: add Toasts
+        error: err => {
+          console.log(err);
+          this.showError(err.message);
+        }
+    });
   }
 
   private showError(message: string) {

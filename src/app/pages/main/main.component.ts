@@ -5,12 +5,14 @@ import {Shot} from '../../domain/shot'
 import {InputGroupModule} from 'primeng/inputgroup'
 import {InputGroupAddonModule} from 'primeng/inputgroupaddon'
 import {InputTextModule} from 'primeng/inputtext'
-import {RouterLink} from '@angular/router'
+import {Router, RouterLink} from '@angular/router'
 import {ButtonModule} from 'primeng/button'
 import {FormsModule, NgForm} from '@angular/forms'
 import {MessageService} from 'primeng/api'
-import {ShotService} from '../../services/shot.service'
 import {RadioButton, RadioButtonClickEvent, RadioButtonModule} from "primeng/radiobutton";
+import { TokenService } from '../../core/services/token.service'
+import { ApiService } from '../../core/services/api.service'
+import { ShotDTO } from '../../core/dto/shot.dto'
 
 @Component({
   selector: 'app-main',
@@ -30,11 +32,15 @@ import {RadioButton, RadioButtonClickEvent, RadioButtonModule} from "primeng/rad
   styleUrl: './main.component.scss'
 })
 export class MainComponent implements AfterViewInit, OnInit {
-  private messageService = inject(MessageService)
+  constructor(
+    private apiService: ApiService,
+    private router: Router,
+    private tokenService: TokenService,
+    private messageService: MessageService,
+  ) {}
 
   // shots:
-  private shotService = inject(ShotService)
-  public shots: Shot[] = []
+  public shots: ShotDTO[] = []
 
   // form:
   public selectedX!: number
@@ -50,7 +56,7 @@ export class MainComponent implements AfterViewInit, OnInit {
   private scale!: number
 
   ngOnInit(): void {
-    this.shotService.retrieveShots().subscribe((shots) => this.shots = shots)
+    this.apiService.retrieveShots().subscribe((shots) => this.shots = shots)
   }
 
   ngAfterViewInit(): void {
@@ -60,8 +66,14 @@ export class MainComponent implements AfterViewInit, OnInit {
     this.drawPlot()
   }
 
-  shoot(x: number | string, y: number | string, r: number | string) {
-    this.shotService.createShot(x, y, r).subscribe((shot) => {
+  shoot(x: number, y: number, r: number) {
+    const shotData = {
+      x: x,
+      y: y,
+      r: r
+    }
+    
+    this.apiService.createShot(shotData).subscribe((shot) => {
       this.shots = this.shots.concat(shot) // reassign array for proper p-table functioning
       this.drawPlot()
     })
@@ -107,7 +119,7 @@ export class MainComponent implements AfterViewInit, OnInit {
     }
     const x = (r * (event.offsetX - this.canvas.width / 2) / this.R / this.scale).toFixed(4)
     const y = (-r * (event.offsetY - this.canvas.width / 2) / this.R / this.scale).toFixed(4)
-    this.shoot(x, y, r)
+    this.shoot(parseFloat(x), parseFloat(y), r)
   }
 
   drawPlot() {
@@ -179,7 +191,7 @@ export class MainComponent implements AfterViewInit, OnInit {
     // points
     this.shots.forEach(shot => {
       if (shot.r == this.getSelectedR())
-        this.drawPoint(shot.x, shot.y, shot.r, shot.inArea)
+        this.drawPoint(shot.x, shot.y, shot.r, shot.inArea!)
     })
   }
 
